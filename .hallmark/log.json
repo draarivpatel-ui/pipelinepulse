@@ -1,0 +1,10 @@
+[
+  {
+    "date": "2026-10-24",
+    "macrostructure": "Instrument Workbench",
+    "theme": "custom",
+    "theme_axes": "dark / mono / chromatic-green",
+    "enrichment": "none (typography and drawn canvas instrument only)",
+    "brief": "PipelinePulse, CI pipeline health and cost studio, terminal telemetry direction"
+  }
+]

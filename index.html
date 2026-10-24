@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PipelinePulse, CI pipeline health and cost studio</title>
+  <meta name="description" content="Paste a GitHub Actions style workflow and PipelinePulse maps the job graph, computes the critical path and queue time, prices runner minutes, clusters failure signatures, and ranks quantified savings. Static, offline, zero dependencies.">
+  <meta name="author" content="Aariv Patel">
+  <meta name="theme-color" content="#22262b">
+  <link rel="stylesheet" href="tokens.css">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2322262b'/%3E%3Cpath d='M2 8h5M9 4h5M9 12h5' stroke='%235fe0a0' stroke-width='1.6'/%3E%3Ccircle cx='8' cy='8' r='1.6' fill='%235fe0a0'/%3E%3C/svg%3E">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="masthead">
+    <div>
+      <h1 class="wordmark">PipelinePulse<span class="wordmark-cursor" aria-hidden="true"></span></h1>
+      <p class="masthead-tag">A CI pipeline health and cost studio. Feed it a GitHub Actions style workflow and it maps the job graph, runs the duration and cost math, and ranks what a fix would be worth.</p>
+    </div>
+    <div class="masthead-meta">
+      <p><strong>Built by Aariv Patel</strong></p>
+      <p>Synthetic fixtures, editable rates, zero dependencies</p>
+      <p>Everything computes in this page, nothing leaves it</p>
+    </div>
+  </header>
+
+  <nav class="section-nav" id="section-nav" aria-label="Sections">
+    <a href="#source">Source</a>
+    <a href="#map">Pipeline map</a>
+    <a href="#duration">Duration math</a>
+    <a href="#cost">Cost model</a>
+    <a href="#failures">Failure patterns</a>
+    <a href="#savings">Savings bench</a>
+  </nav>
+
+  <main id="main">
+    <section class="readout" aria-label="Summary readout">
+      <div class="readout-grid">
+        <div class="readout-cell">
+          <p class="readout-label">Wall clock per run</p>
+          <p class="readout-value is-accent value-settle" id="ro-wall">measuring</p>
+          <p class="readout-sub" id="ro-wall-sub"></p>
+        </div>
+        <div class="readout-cell">
+          <p class="readout-label">Critical path</p>
+          <p class="readout-value value-settle" id="ro-critical">measuring</p>
+          <p class="readout-sub" id="ro-critical-sub"></p>
+        </div>
+        <div class="readout-cell">
+          <p class="readout-label">Cost per run</p>
+          <p class="readout-value value-settle" id="ro-cost">measuring</p>
+          <p class="readout-sub" id="ro-cost-sub"></p>
+        </div>
+        <div class="readout-cell">
+          <p class="readout-label">Cost per month</p>
+          <p class="readout-value value-settle" id="ro-monthly">measuring</p>
+          <p class="readout-sub" id="ro-monthly-sub"></p>
+        </div>
+        <div class="readout-cell">
+          <p class="readout-label">Run failure rate</p>
+          <p class="readout-value value-settle" id="ro-failure">measuring</p>
+          <p class="readout-sub" id="ro-failure-sub"></p>
+        </div>
+      </div>
+    </section>
+
+    <div class="workbench">
+      <section class="panel panel-source" id="source" aria-labelledby="source-title">
+        <div class="panel-head">
+          <h2 id="source-title">Source</h2>
+          <p class="panel-note">edit anything, the studio recomputes as you type</p>
+        </div>
+        <p class="panel-lede">The workflow is parsed by a hand written YAML subset parser: jobs, needs, runs-on, matrix and steps. Anything the subset does not support comes back as a parse error with a line number, never a guess.</p>
+        <label class="field" for="fixture-select">Fixture, both are synthetic</label>
+        <select id="fixture-select"></select>
+        <label class="field" for="workflow-text">Workflow YAML</label>
+        <textarea id="workflow-text" spellcheck="false" aria-describedby="parse-status"></textarea>
+        <p class="parse-status" id="parse-status">
+          <span class="status-dot" id="status-dot" aria-hidden="true"></span>
+          <span id="status-text" role="status">waiting for input</span>
+        </p>
+        <ul class="error-list" id="parse-errors"></ul>
+        <ul class="warning-list" id="parse-warnings"></ul>
+        <p class="fixture-note" id="fixture-note"></p>
+      </section>
+
+      <section class="panel panel-map" id="map" aria-labelledby="map-title">
+        <div class="panel-head">
+          <h2 id="map-title">Pipeline map</h2>
+          <p class="panel-note">one column per wave, green marks the critical path</p>
+        </div>
+        <p class="panel-lede">Jobs and needs render as a layered graph on canvas. The slow pulse travels the critical path while the page rests; hover or click a job, or use the list below, which is the keyboard and screen reader path to the same selection.</p>
+        <div class="map-scroll" id="map-scroll">
+          <canvas class="map-canvas" id="map-canvas" role="img"></canvas>
+        </div>
+        <p class="map-legend" aria-hidden="true">
+          <span class="legend-item"><span class="legend-swatch is-accent"></span>critical path</span>
+          <span class="legend-item"><span class="legend-swatch"></span>dependency edge</span>
+          <span class="legend-item"><span class="legend-swatch is-node"></span>selected job</span>
+        </p>
+        <ul class="job-list" id="job-list"></ul>
+        <div class="job-detail" id="job-detail"></div>
+      </section>
+
+      <section class="panel panel-duration" id="duration" aria-labelledby="duration-title">
+        <div class="panel-head">
+          <h2 id="duration-title">Duration math</h2>
+          <p class="panel-note">medians, tails, queue time, wall clock</p>
+        </div>
+        <div class="controls">
+          <label class="field" for="input-pool">Runner pool
+            <input type="number" id="input-pool" value="20" min="1" step="1">
+          </label>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <caption class="visually-hidden">Per job duration statistics in minutes</caption>
+            <thead>
+              <tr>
+                <th scope="col">Job</th>
+                <th scope="col" class="num">Median</th>
+                <th scope="col" class="num">p90</th>
+                <th scope="col" class="num">Queue est</th>
+                <th scope="col" class="num">Wall</th>
+                <th scope="col" class="num">Share</th>
+              </tr>
+            </thead>
+            <tbody id="duration-body"></tbody>
+          </table>
+        </div>
+        <p class="table-foot" id="duration-foot"></p>
+      </section>
+
+      <section class="panel panel-cost" id="cost" aria-labelledby="cost-title">
+        <div class="panel-head">
+          <h2 id="cost-title">Cost model</h2>
+          <p class="panel-note">runner minutes from an editable rate table</p>
+        </div>
+        <div class="controls">
+          <label class="field" for="input-rate-linux">Linux $ per min
+            <input type="number" id="input-rate-linux" value="0.008" min="0" step="0.001">
+          </label>
+          <label class="field" for="input-rate-windows">Windows $ per min
+            <input type="number" id="input-rate-windows" value="0.016" min="0" step="0.001">
+          </label>
+          <label class="field" for="input-rate-macos">macOS $ per min
+            <input type="number" id="input-rate-macos" value="0.08" min="0" step="0.001">
+          </label>
+          <label class="field" for="input-runs-day">Runs per day
+            <input type="number" id="input-runs-day" value="24" min="0" step="1">
+          </label>
+          <label class="field" for="input-days-month">Days per month
+            <input type="number" id="input-days-month" value="30" min="0" step="1">
+          </label>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <caption class="visually-hidden">Per job cost per run</caption>
+            <thead>
+              <tr>
+                <th scope="col">Job</th>
+                <th scope="col">Runner</th>
+                <th scope="col" class="num">Billable</th>
+                <th scope="col" class="num">Rate</th>
+                <th scope="col" class="num">Cost per run</th>
+                <th scope="col" class="num">Share</th>
+              </tr>
+            </thead>
+            <tbody id="cost-body"></tbody>
+          </table>
+        </div>
+        <div class="stat-row">
+          <div class="stat-cell">
+            <p class="readout-label">Runs per month</p>
+            <strong id="cost-runs-month"></strong>
+          </div>
+          <div class="stat-cell">
+            <p class="readout-label">Runner minutes per month</p>
+            <strong id="cost-minutes-month"></strong>
+          </div>
+          <div class="stat-cell">
+            <p class="readout-label">Cost per month</p>
+            <strong id="cost-monthly"></strong>
+          </div>
+          <div class="stat-cell">
+            <p class="readout-label">Cost per month at p90</p>
+            <strong id="cost-monthly-p90"></strong>
+          </div>
+        </div>
+        <div class="stat-row" id="cache-block">
+          <div class="stat-cell">
+            <p class="readout-label">Cache hit rate</p>
+            <strong id="cache-hit"></strong>
+          </div>
+          <div class="stat-cell">
+            <p class="readout-label">Cache misses</p>
+            <strong id="cache-miss"></strong>
+          </div>
+          <div class="stat-cell">
+            <p class="readout-label">Median saved on hit</p>
+            <strong id="cache-saved"></strong>
+          </div>
+          <div class="stat-cell">
+            <p class="readout-label">Miss exposure per run</p>
+            <strong id="cache-exposure"></strong>
+          </div>
+        </div>
+        <p class="table-foot" id="cost-foot"></p>
+      </section>
+
+      <section class="panel panel-failures" id="failures" aria-labelledby="failures-title">
+        <div class="panel-head">
+          <h2 id="failures-title">Failure patterns</h2>
+          <p class="panel-note">deterministic clustering over the fixture run logs</p>
+        </div>
+        <p class="panel-lede">Failure messages normalize into signatures: numbers, hashes and casing collapse, so one recurring error stays one cluster. Retry recoveries separate flaky clusters from hard ones, and failed attempts rank by the billable minutes they burned.</p>
+        <div class="empty" id="failures-empty">No failures in this run history, or no run history at all. The failure panels read the fixture runs, so a pasted workflow without history has nothing to cluster.</div>
+        <div id="fail-clusters-wrap">
+          <div class="table-scroll">
+            <table>
+              <caption class="visually-hidden">Failure clusters by error signature</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Job</th>
+                  <th scope="col">Signature sample</th>
+                  <th scope="col" class="num">Count</th>
+                  <th scope="col" class="num">Retried pass</th>
+                  <th scope="col" class="num">Hard</th>
+                  <th scope="col" class="num">Flaky</th>
+                  <th scope="col" class="num">Burned</th>
+                </tr>
+              </thead>
+              <tbody id="fail-clusters-body"></tbody>
+            </table>
+          </div>
+          <p class="table-foot" id="fail-clusters-foot"></p>
+        </div>
+        <div id="flaky-block">
+          <h3 class="subhead">Flakiness by job</h3>
+          <ul class="flaky-bars" id="flaky-list"></ul>
+        </div>
+        <div id="expensive-block">
+          <h3 class="subhead">Most expensive failing jobs</h3>
+          <ul class="expensive-list" id="expensive-list"></ul>
+        </div>
+      </section>
+
+      <section class="panel panel-savings" id="savings" aria-labelledby="savings-title">
+        <div class="panel-head">
+          <h2 id="savings-title">Savings bench</h2>
+          <p class="panel-note">every number is an estimate with its assumptions attached</p>
+        </div>
+        <p class="panel-lede">Five deterministic rules read the same history you just saw: cache misses, slow matrix combinations, jobs running for untouched paths, matrices that keep spending after a sibling fails, and hung tails that a timeout would cut. Nothing here edits the workflow; the bench only proposes and prices.</p>
+        <div class="empty" id="savings-empty">No savings signal in this run history. The bench needs fixture runs to measure against.</div>
+        <div id="savings-list"></div>
+        <p class="bench-total" id="savings-total"></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="footer">
+    <p><strong>PipelinePulse</strong> is built by Aariv Patel.</p>
+    <p>Workflows, run histories and numbers on this page are synthetic or illustrative; the runner rate presets mirror public hosted runner list prices and every value is editable.</p>
+    <p>Static page, vanilla HTML, CSS and JavaScript, no network calls, no dependencies.</p>
+  </footer>
+
+  <noscript>
+    <p style="max-width:60ch;margin:2rem auto;padding:1rem;border:1px solid #657077;font-family:monospace">
+      PipelinePulse computes everything in the browser with JavaScript. Enable JavaScript to run the studio; there is no server and no network call.
+    </p>
+  </noscript>
+
+  <script defer src="js/yaml.js"></script>
+  <script defer src="js/model.js"></script>
+  <script defer src="js/duration.js"></script>
+  <script defer src="js/cost.js"></script>
+  <script defer src="js/failures.js"></script>
+  <script defer src="js/savings.js"></script>
+  <script defer src="js/fixtures.js"></script>
+  <script defer src="js/graph.js"></script>
+  <script defer src="js/app.js"></script>
+</body>
+</html>

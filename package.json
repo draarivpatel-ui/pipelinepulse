@@ -1,0 +1,11 @@
+{
+  "name": "pipelinepulse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CI pipeline health and cost studio. Static single page app, vanilla HTML/CSS/JS, zero dependencies.",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "author": "Aariv Patel",
+  "license": "MIT"
+}
