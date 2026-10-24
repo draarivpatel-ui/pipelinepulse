@@ -70,3 +70,15 @@ js/graph.js       canvas pipeline map with the critical path pulse
 js/app.js         DOM wiring, controls, rendering
 tests/            five node:test files, 73 tests, 234 assertion calls
 ```
+
+## Refinement pass 2026-10-24
+
+- Wiring proof. New `scripts/dom-smoke.js` loads the real markup into a minimal DOM stub, runs the nine shipped scripts in order with a stubbed 2d canvas context and a pumped requestAnimationFrame clock, and drives init, ninety pulse frames, the fixture swap, job chip selection, a pasted workflow edit, and a parse error. 25 checks pass, so the init path and each flow execute without throwing. The HTML has no duplicate ids and every id app.js references resolves.
+- Fixed. The page shipped no Open Graph tags; og:title, og:description, and og:type are now in the head.
+- Fixed. The theme color was #22262b while the page background token is oklch(0.17 0.008 247), which converts to about #0d1013. The meta now matches the real canvas color.
+- Removed. The dead `.field select` selector: the fixture select is a sibling of its label rather than a child, so the rule never matched and rendering is unchanged.
+- Accessibility. Label associations, the status live region, the visually hidden table captions, the canvas aria-label, and the focus styles were rechecked. Contrast computed from the converted tokens: every text pair is above 4.5, the lowest being muted on surface 2 at 4.97.
+- Motion. The pulse already pauses off screen through the IntersectionObserver, on hidden tabs through visibilitychange, and under reduced motion; the wordmark breathe is disabled by the reduced motion block, so nothing needed changing.
+- Copy and overflow. No em or en dashes, no emoji, no uppercase transforms. Tables scroll inside their own wrappers, so the page does not overflow at 320 px.
+- Risk left as is. The graph reads computed custom property colors and hands them to canvas fillStyle. A browser old enough to reject oklch there would fail the stylesheet too, and graph.js carries hex fallbacks for exactly that path.
+- Tests: 73 before the pass, 73 after, all passing. Smoke: 25 checks.
