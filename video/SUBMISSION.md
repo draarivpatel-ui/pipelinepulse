@@ -7,3 +7,5 @@ PipelinePulse reads a GitHub Actions style workflow and models its run time, cos
 
 Try it: https://aariv.me/pipelinepulse/
 Code: https://github.com/draarivpatel-ui/pipelinepulse
+
+Video URL: https://youtu.be/a1TUerZQNIg
