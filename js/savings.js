@@ -144,7 +144,6 @@
     var runs = history && history.runs ? history.runs : [];
     if (runs.length === 0) return null;
     var rpm = runsPerMonth(opts);
-    var rate = blendedRate(cost);
     var out = [];
     model.order.forEach(function (id) {
       var patterns = watchPatterns[id];
@@ -187,7 +186,6 @@
     var runs = history && history.runs ? history.runs : [];
     if (runs.length === 0) return null;
     var rpm = runsPerMonth(opts);
-    var rate = blendedRate(cost);
     var out = [];
     model.order.forEach(function (id) {
       var job = model.jobs[id];
@@ -200,7 +198,6 @@
         var recs = run.jobs ? run.jobs[id] : null;
         if (!recs) continue;
         var failMin = null;
-        var otherMax = [];
         var seenCombos = {};
         for (var a = 0; a < recs.length; a++) {
           var rec = recs[a];
@@ -251,7 +248,6 @@
     var runs = history && history.runs ? history.runs : [];
     if (runs.length === 0) return null;
     var rpm = runsPerMonth(opts);
-    var rate = blendedRate(cost);
     var out = [];
     model.order.forEach(function (id) {
       var job = model.jobs[id];

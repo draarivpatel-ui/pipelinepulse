@@ -268,7 +268,6 @@ async function main() {
   function ok(cond, msg) { checks += 1; assert.ok(cond, msg); }
 
   const fixtureCount = globalThis.PP.FIXTURES.length;
-  const order0 = globalThis.PP.FIXTURES[0].model ? null : null; // model is parsed by the app
 
   /* the studio opened with fixture 0 fully rendered */
   ok(registry['fixture-select'].children.length === fixtureCount, 'the fixture select holds every fixture');

@@ -340,8 +340,7 @@
         if (r.x - 60 < wrapper.scrollLeft || r.x + r.w + 60 > wrapper.scrollLeft + wrapper.clientWidth) {
           wrapper.scrollLeft = Math.max(0, r.x - 60);
         }
-      },
-      drawStatic: function () { draw(0); }
+      }
     };
   }
 
