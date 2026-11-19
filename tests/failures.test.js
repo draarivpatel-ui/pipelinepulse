@@ -12,7 +12,6 @@ require('../js/fixtures.js');
 const PP = globalThis.PP;
 
 const SERVICE = PP.FIXTURES[0];
-const model = PP.buildModel(SERVICE.yaml, PP).model;
 const clusters = PP.clusterFailures(SERVICE.history);
 
 test('signatures strip numbers so line and duration churn collapse', () => {
