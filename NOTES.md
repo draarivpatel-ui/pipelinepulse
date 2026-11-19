@@ -21,7 +21,7 @@ With no run history (a pasted workflow), durations fall back to a stated per ste
 Run with Node 18 or newer, no installs:
 
 ```
-node --test tests/
+node --test
 ```
 
 Exact results on this machine (Node v26.8.1): **73 tests, 73 passing, 0 failing, 0 skipped, about 48 milliseconds total** (budget: under 30 seconds). The suite makes **234 assertion calls** across five files, comfortably over the 45 assertion minimum:
